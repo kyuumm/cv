@@ -90,7 +90,7 @@ function getArtworkHit(container, clientX, clientY) {
 function header(route) {
   const links = [
     ["/", "首页"],
-    ["/work", "求职 / 项目"],
+    ["/work", "求职"],
     ["/interests", "兴趣"],
     ["/contact", "联系"],
   ];
@@ -214,7 +214,8 @@ function contact() {
 function render() {
   const route = currentRoute();
   const page = route === "/work" ? work() : route === "/interests" ? interests() : route === "/contact" ? contact() : home();
-  app.innerHTML = `${header(route)}${page}${footer()}`;
+  const scrim = menuOpen ? `<button class="menu-scrim" type="button" aria-label="关闭导航菜单"></button>` : "";
+  app.innerHTML = `${header(route)}${scrim}${page}${footer()}`;
   bind();
 }
 
@@ -258,6 +259,11 @@ function bind() {
     navigate(link.getAttribute("href"));
   }));
   app.querySelector(".menu-toggle")?.addEventListener("click", () => { menuOpen = !menuOpen; render(); });
+  app.querySelector(".menu-scrim")?.addEventListener("click", () => {
+    menuOpen = false;
+    render();
+    app.querySelector(".menu-toggle")?.focus();
+  });
   app.querySelectorAll("[data-category]").forEach((button) => button.addEventListener("click", () => {
     activeCategory = button.dataset.category;
     render();
@@ -279,4 +285,11 @@ function bind() {
 }
 
 window.addEventListener("popstate", () => { menuOpen = false; render(); });
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && menuOpen) {
+    menuOpen = false;
+    render();
+    app.querySelector(".menu-toggle")?.focus();
+  }
+});
 render();
