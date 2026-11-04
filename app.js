@@ -37,6 +37,7 @@ const categories = ["全部", "产品与设计", "AI 产品实践", "前端开�
 const routes = ["/", "/work", "/interests", "/contact"];
 const app = document.querySelector("#app");
 const asset = (path) => `/asset/${path}`;
+const alphaPixels = new WeakMap();
 let activeCategory = "全部";
 let searchTerm = "";
 let menuOpen = false;
@@ -44,6 +45,46 @@ let menuOpen = false;
 function currentRoute() {
   const path = location.pathname.replace(/\/$/, "") || "/";
   return routes.includes(path) ? path : "/";
+}
+
+function getAlphaPixels(image) {
+  if (alphaPixels.has(image)) return alphaPixels.get(image);
+  if (!image.complete || !image.naturalWidth || !image.naturalHeight) return null;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) return null;
+
+  try {
+    context.drawImage(image, 0, 0);
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    const alpha = new Uint8Array(canvas.width * canvas.height);
+    for (let i = 0, p = 3; i < alpha.length; i++, p += 4) alpha[i] = pixels[p];
+    const result = { width: canvas.width, height: canvas.height, alpha };
+    alphaPixels.set(image, result);
+    return result;
+  } catch {
+    alphaPixels.set(image, false);
+    return null;
+  }
+}
+
+function hasPixelAt(image, clientX, clientY) {
+  const rect = image.getBoundingClientRect();
+  if (clientX < rect.left || clientX >= rect.right || clientY < rect.top || clientY >= rect.bottom) return false;
+  const pixels = getAlphaPixels(image);
+  if (!pixels) return false;
+  const x = Math.min(pixels.width - 1, Math.floor((clientX - rect.left) / rect.width * pixels.width));
+  const y = Math.min(pixels.height - 1, Math.floor((clientY - rect.top) / rect.height * pixels.height));
+  return pixels.alpha[y * pixels.width + x] > 0;
+}
+
+function getArtworkHit(container, clientX, clientY) {
+  const links = [...container.querySelectorAll(".entry-card")].sort((a, b) =>
+    Number(getComputedStyle(b).zIndex) - Number(getComputedStyle(a).zIndex));
+  return links.find((link) => hasPixelAt(link.querySelector("img"), clientX, clientY)) ?? null;
 }
 
 function header(route) {
@@ -68,7 +109,7 @@ function footer() {
   return `<footer class="site-footer">
     <div class="shell">
     <div class="footer-inner">
-      <div class="footer-about">北京科技大学计算机科学与技术本科生<br>对产品与设计感兴趣。</div>
+      <div class="footer-about">计算机科学与技术本科生<br>对产品与设计感兴趣。</div>
       <div class="footer-links">
         <a href="/work" data-link>项目</a>
         <a href="/interests" data-link>兴趣</a>
@@ -185,6 +226,32 @@ function navigate(path) {
 }
 
 function bind() {
+  const artwork = app.querySelector(".home-entries");
+  if (artwork) {
+    const links = [...artwork.querySelectorAll(".entry-card")];
+    artwork.addEventListener("pointermove", (event) => {
+      const hit = getArtworkHit(artwork, event.clientX, event.clientY);
+      links.forEach((link) => link.classList.toggle("pixel-hover", link === hit));
+    });
+    artwork.addEventListener("pointerleave", () => links.forEach((link) => link.classList.remove("pixel-hover")));
+    artwork.addEventListener("click", (event) => {
+      if (event.detail === 0) return;
+      const hit = getArtworkHit(artwork, event.clientX, event.clientY);
+      if (!hit) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
+      const clicked = event.target.closest(".entry-card");
+      if (clicked !== hit) {
+        event.preventDefault();
+        event.stopPropagation();
+        navigate(hit.getAttribute("href"));
+      }
+    }, true);
+  }
+
   app.querySelectorAll("[data-link]").forEach((link) => link.addEventListener("click", (event) => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
