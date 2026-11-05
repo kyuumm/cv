@@ -213,6 +213,7 @@ img {
 .filters {
   align-self: start;
   position: sticky;
+  top: 112px;
   border-top: 1px solid var(--line);
   padding-top: 22px;
 }
@@ -292,12 +293,6 @@ img {
   display: grid;
   gap: 0;
 }
-
-/* .project-card {
-  display: block;
-  border-top: 1px solid var(--line);
-  padding: 24px 0;
-} */
 
 .project-card:last-child {
   border-bottom: 1px solid var(--line);
@@ -553,10 +548,6 @@ img {
     gap: 10px;
     margin: 42px 0 28px;
   }
-
-  /* .interest-grid {
-    gap: px;
-  } */
 
   .contact-page {
     padding: 55px 0 72px;

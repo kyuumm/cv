@@ -35,6 +35,21 @@ const projects = [
 
 const categories = ["全部", "产品与设计", "AI 产品实践", "前端开发", "其他项目"];
 const routes = ["/", "/work", "/interests", "/contact"];
+const navigation = [
+  ["/", "首页"],
+  ["/work", "求职"],
+  ["/interests", "兴趣"],
+  ["/contact", "联系"],
+];
+const interestTopics = [
+  ["cutCn.png", "剪辑"],
+  ["diyCn.png", "手工"],
+  ["languageCn.png", "语言"],
+  ["musicCn.png", "音乐"],
+  ["paintCn.png", "绘画"],
+  ["photoCn.png", "摄影"],
+  ["otherCn.png", "其他兴趣"],
+];
 const app = document.querySelector("#app");
 const asset = (path) => `/asset/${path}`;
 const alphaPixels = new WeakMap();
@@ -45,6 +60,14 @@ let menuOpen = false;
 function currentRoute() {
   const path = location.pathname.replace(/\/$/, "") || "/";
   return routes.includes(path) ? path : "/";
+}
+
+function escapeAttribute(value) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 function getAlphaPixels(image) {
@@ -88,18 +111,12 @@ function getArtworkHit(container, clientX, clientY) {
 }
 
 function header(route) {
-  const links = [
-    ["/", "首页"],
-    ["/work", "求职"],
-    ["/interests", "兴趣"],
-    ["/contact", "联系"],
-  ];
   return `<header class="site-header">
     <div class="shell header-inner">
       <a class="brand" href="/" data-link aria-label="十九，返回首页">十九</a>
-      <button class="menu-toggle" aria-label="打开菜单" aria-expanded="${menuOpen}">☰</button>
+      <button class="menu-toggle" type="button" aria-label="${menuOpen ? "关闭菜单" : "打开菜单"}" aria-expanded="${menuOpen}">☰</button>
       <nav class="nav ${menuOpen ? "open" : ""}" aria-label="主导航">
-        ${links.map(([path, label]) => `<a href="${path}" data-link aria-current="${route === path ? "page" : "false"}">${label}</a>`).join("")}
+        ${navigation.map(([path, label]) => `<a href="${path}" data-link aria-current="${route === path ? "page" : "false"}">${label}</a>`).join("")}
       </nav>
     </div>
   </header>`;
@@ -164,7 +181,7 @@ function work() {
     <div class="work-layout">
       <aside class="filters" aria-label="项目筛选">
         <label class="search-label" for="project-search">搜索项目、技能或关键词</label>
-        <div class="search-box"><span aria-hidden="true">⌕</span><input id="project-search" type="search" placeholder="React、Figma、AI" value="${searchTerm.replaceAll('"', "&quot;")}" autocomplete="off"></div>
+        <div class="search-box"><span aria-hidden="true">⌕</span><input id="project-search" type="search" placeholder="React、Figma、AI" value="${escapeAttribute(searchTerm)}" autocomplete="off"></div>
         <p class="filter-heading">项目分类</p>
         <div class="filter-list">${categories.map((category) => `<button class="filter-button ${activeCategory === category ? "active" : ""}" data-category="${category}" aria-pressed="${activeCategory === category}">${category}</button>`).join("")}</div>
         <button class="clear-button" data-clear>清除筛选</button>
@@ -178,16 +195,6 @@ function work() {
 }
 
 function interests() {
-  const topics = [
-    ["cutCn.png", "剪辑"],
-    ["diyCn.png", "手工"],
-    ["languageCn.png", "语言"],
-    ["musicCn.png", "音乐"],
-    ["paintCn.png", "绘画"],
-    ["photoCn.png", "摄影"],
-    ["otherCn.png", "其他兴趣"],
-  ];
-
   return `<main class="page shell interests-page">
     <div class="interest-intro">
       <img src="${asset("interest/Star1.png")}" alt="">
@@ -195,7 +202,7 @@ function interests() {
       <img src="${asset("interest/Star2.png")}" alt="">
     </div>
     <section class="interest-grid" aria-label="兴趣主题">
-      ${topics.map(([image, label]) => `<div class="interest-tile"><img src="${asset(`interest/${image}`)}" alt="${label}"></div>`).join("")}
+      ${interestTopics.map(([image, label]) => `<div class="interest-tile"><img src="${asset(`interest/${image}`)}" alt="${label}"></div>`).join("")}
     </section>
   </main>`;
 }
