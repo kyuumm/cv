@@ -42,21 +42,27 @@ input:focus-visible {
 }
 
 .shell {
-  width: min(1400px, calc(100% - 80px));
+  width: min(1600px, calc(100% - 60px));
   margin: 0 auto;
 }
+
+/* .home-page {
+这里也有shell的设置，上方的是tab栏，下方的是内容栏
+  display: grid; */
 
 .site-header {
   position: sticky;
   top: 0;
   z-index: 5;
   width: 100%;
-  background: #fff;
+  background: rgb(255 255 255 / 78%);
   border-bottom: 1px solid var(--line);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
 .header-inner {
-  min-height: 90px;
+  min-height: 5vw;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -75,8 +81,17 @@ input:focus-visible {
 }
 
 .nav a {
+  display: inline-block;
   color: var(--muted);
-  padding: 10px 0;
+  padding: 8px 0;
+  background: linear-gradient(to bottom, transparent 70%, #cdf9ed 55%) no-repeat left bottom;
+  background-size: 0% 100%;
+  /* transition: background-size 220ms ease; */
+}
+
+.nav a:hover,
+.nav a:focus-visible {
+  background-size: 100% 100%;
 }
 
 .nav a[aria-current="page"] {
@@ -122,19 +137,27 @@ input:focus-visible {
   display: grid;
   grid-template-columns: 40% 60%;
   align-items: center;
-  width: min(1400px, calc(100% - 80px));
+  width: min(1600px, calc(100% - 60px));
   margin: 0 auto;
   padding: 0;
 }
 
-/* Adjust these four zoom values for the shared image scale at each screen width. */
 img {
   display: block;
   width: auto;
   height: auto;
-  max-width: none;
-  zoom: .4;
+  max-width: 100%;
   background: transparent;
+
+  /* 禁止拖拽 (CSS3 属性，兼容常见 Webkit 浏览器及 Edge) */
+  -webkit-user-drag: none;
+  user-drag: none;
+
+  /* 禁止选中 */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .home-hero {
@@ -142,6 +165,27 @@ img {
   display: flex;
   justify-content: center;
   padding: 0;
+}
+
+/*
+  Do not use `zoom` here: Safari on iPad does not reliably support it.
+  Each value below represents the same scale for its source artwork, and is
+  constrained by both the available width (vw) and height (vh).
+*/
+.home-page img {
+  max-width: none;
+}
+
+.home-hero img {
+  width: min(36vw, 69vh, 552px);
+}
+
+.entry-card:first-child img {
+  width: min(30.55vw, 58.65vh, 469px);
+}
+
+.entry-card+.entry-card img {
+  width: min(30.55vw, 58.65vh, 469px);
 }
 
 .home-entries {
@@ -205,20 +249,41 @@ img {
 
 .work-layout {
   display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 55px;
+  grid-template-columns: minmax(260px, 310px) minmax(0, 1fr);
+  gap: clamp(42px, 6vw, 110px);
   padding-bottom: 90px;
 }
 
-.filters {
+.work-page {
+  padding-top: clamp(34px, 5vw, 84px);
+}
+
+.work-sidebar {
   align-self: start;
   position: sticky;
-  top: 112px;
-  border-top: 1px solid var(--line);
+  top: calc(5vw + 28px);
+}
+
+.work-sidebar-art {
+  display: flex;
+  justify-content: center;
+  overflow: visible;
+}
+
+.work-sidebar-art img {
+  max-width: none;
+  flex: none;
+}
+
+.work-art-job {
+  width: min(31vw, 69vh, 200px);
+}
+
+.filters {
   padding-top: 22px;
 }
 
-.search-label {
+/* .search-label {
   display: block;
   margin-bottom: 10px;
   font-size: .8em;
@@ -242,90 +307,313 @@ img {
   outline: 0;
   background: transparent;
   font-size: 14px;
-}
+} */
 
 .filter-heading {
-  margin: 26px 0 10px;
-  color: var(--muted);
-  font-size: .75em;
+  /* margin: 26px 0 10px; */
+  color: var(--ink);
+  font-size: .85em;
 }
 
-.filter-list {
-  display: grid;
-  gap: 3px;
-}
-
-.filter-button,
-.clear-button {
+.tag-filter,
+.ability-tag,
+.clear-button,
+.experience-menu-item {
   border: 0;
   background: transparent;
-  text-align: left;
   cursor: pointer;
 }
 
-.filter-button {
-  padding: 10px;
-  color: var(--muted);
-  font-size: .82em;
+.tag-filter-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.filter-button:hover,
-.filter-button.active {
-  color: var(--ink);
-  text-decoration: underline;
-  text-underline-offset: 4px;
+.tag-filter,
+.ability-tag {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: .68em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.tag-filter {
+  padding: 8px 10px;
+}
+
+.tag-filter:hover,
+.tag-filter.active {
+  border-color: var(--ink);
+  color: #fff;
+  background: var(--ink);
 }
 
 .clear-button {
-  margin-top: 12px;
-  padding: 8px 0;
-  font-size: .8em;
+  padding: 2px 0;
+  font-size: .7em;
   text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.clear-button:disabled {
+  cursor: default;
+  opacity: .35;
+  text-decoration: none;
+}
+
+.filter-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 16px;
 }
 
 .result-count {
-  margin: 0 0 20px;
+  margin: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: .7em;
 }
 
-.project-list {
+.experience-menu {
+  margin-top: 34px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+
+.menu-current-label,
+.project-kicker {
+  margin: 0;
+  color: var(--muted);
+  font-size: .65em;
+  letter-spacing: .04em;
+}
+
+.menu-current-title {
+  min-height: 2.5em;
+  margin: 7px 0 14px;
+  font-size: .9em;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.experience-menu-list {
   display: grid;
-  gap: 0;
+  /* border-top: 1px solid var(--line); */
+  max-height: 168px;
+  overflow-y: auto;
 }
 
-.project-card:last-child {
+.experience-menu-item {
+  position: relative;
+  width: 100%;
+  /* border-bottom: 1px solid var(--line); */
+  padding: 10px 0 10px 12px;
+  color: var(--muted);
+  text-align: left;
+  font-size: .72em;
+  line-height: 1.4;
+}
+
+.experience-menu-item::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: transparent;
+  content: "";
+  transform: translateY(-50%);
+}
+
+.experience-menu-item:hover,
+.experience-menu-item.active {
+  color: var(--ink);
+}
+
+.experience-menu-item.active::before {
+  background: var(--ink);
+}
+
+.work-content {
+  min-width: 0;
+}
+
+.resume-project-list {
+  display: grid;
+}
+
+.resume-project {
+  scroll-margin-top: calc(5vw + 34px);
+  /* border-top: 1px solid var(--line); */
+  padding: 30px 0 46px;
+}
+
+.resume-project:last-child {
   border-bottom: 1px solid var(--line);
 }
 
-.project-type,
-.project-meta {
-  color: var(--muted);
-  font-size: .75em;
+.resume-project-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 24px;
 }
 
-.project-card h2 {
-  margin: 8px 0;
-  font-size: 20px;
-  font-weight: 400;
+.resume-project h2 {
+  margin: 0;
+  font-size: 1.3em;
+  font-weight: 700;
+  line-height: 2;
+  /* border-bottom: 10px solid #cdf9ed; */
+
+  display: inline;
+  /* 关键：让背景宽度随文字长度变化，而不是占满整行 */
+
+  /* 前 55% 透明，55% 到 100% 为浅蓝色（调整百分比可控制重合高度） */
+  background: linear-gradient(to bottom, transparent 63%, #cdf9ed 55%);
+
+  /* 让左右两边像图片里一样稍微多突出一点 */
+  padding: 0 6px;
+  background-position: -100% 0;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  transition: background-position 420ms ease;
+
+  /* 如果文字换行，保证每行都有独立的突出感 */
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+
 }
 
-.project-card p {
-  max-width: 700px;
+.resume-project h2.is-visible {
+  background-position: 0 0;
+}
+
+
+.project-role {
   margin: 0;
   color: var(--muted);
+  font-size: .7em;
+  line-height: 1.6;
+}
+
+.resume-project-head .project-role {
+  margin-top: 7px;
+}
+
+.project-link {
+  flex: none;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 2px;
+  font-size: .72em;
+  padding-top: 10px;
+}
+
+.project-summary {
+  /* margin: 20px 0 24px; */
+  /* color: var(--muted); */
+  font-size: .8em;
+  /* line-height: 1.8; */
+  padding: 0.8vw 0;
+}
+
+.ability-list {
+  display: grid;
+  gap: 18px;
+}
+
+.ability-card {
+  padding: 2px 0;
+}
+
+.ability-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ability-title {
+  flex: 1 1 auto;
+  margin: 0;
   font-size: .9em;
+  font-weight: 400;
+  line-height: 1.45;
+
+
+  padding-left: 1.8vw;
+  font-weight: 500;
+
+
+}
+
+.ability-bullet {
+  display: inline-block;
+  font-size: 1.35em;
+  line-height: 0;
+  vertical-align: middle;
+}
+
+.ability-tags {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.ability-tag {
+  padding: 5px 7px;
+}
+
+.ability-tag:hover,
+.ability-tag.active {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.ability-description {
+  /* max-width: 790px; */
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: .8em;
+  line-height: 1.8;
+  padding-left: 3.8vw;
+}
+
+.project-tech {
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: .68em;
   line-height: 1.8;
 }
 
-.project-meta {
-  margin-top: 12px;
+.project-tech span {
+  margin-right: 10px;
+  color: var(--ink);
+}
+
+.in-progress-card {
+  padding-bottom: 34px;
+}
+
+.in-progress-card h2 {
+  margin-top: 8px;
+}
+
+.in-progress-card .project-role {
+  margin-top: 7px;
 }
 
 .empty-state {
-  padding: 40px 0;
+  border-top: 1px solid var(--line);
+  padding: 40px 0 48px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: .78em;
 }
 
 .empty-state button {
@@ -347,6 +635,7 @@ img {
   align-items: center;
   gap: 16px;
   margin: 58px 0 40px;
+
 }
 
 .interest-title {
@@ -358,6 +647,8 @@ img {
 
 .interest-title img {
   display: block;
+  margin: 20px;
+  height: 6vw;
 }
 
 .interest-grid {
@@ -369,14 +660,18 @@ img {
 }
 
 .interest-tile {
+  /* width: min(31vw, 69vh, 130px); */
+  scale: 0.6;
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
+  padding: 4vw 0;
 }
 
 .interest-tile img {
   display: block;
+  height: 6vw;
 }
 
 .contact-page {
@@ -454,7 +749,7 @@ img {
 
 @media (max-width: 760px) {
   .shell {
-    width: calc(100% - 45px);
+    width: calc(100% - 60px);
   }
 
   .header-inner {
@@ -489,28 +784,6 @@ img {
   }
 
 
-  .home-entries {
-    left: auto;
-    transform: none;
-    flex-direction: column;
-    align-items: center;
-    width: max-content;
-    margin: 0 auto;
-    padding-bottom: 52px;
-  }
-
-  .entry-card:first-child {
-    z-index: 2;
-    left: -40px;
-  }
-
-  .entry-card+.entry-card {
-    z-index: 1;
-    margin-left: 50px;
-    margin-top: -175px;
-    left: 20px;
-  }
-
   .section-heading {
     display: block;
     margin: 44px 0 30px;
@@ -525,29 +798,37 @@ img {
     gap: 22px;
   }
 
-  .filters {
+  .work-sidebar {
     position: static;
-    padding-top: 16px;
   }
 
-  .filter-heading {
-    margin: 18px 0 8px;
+
+  .experience-menu {
+    margin-top: 26px;
   }
 
-  .filter-list {
-    display: flex;
-    overflow-x: auto;
+
+
+  .resume-project {
+    scroll-margin-top: 82px;
+    padding: 25px 0 38px;
   }
 
-  .filter-button {
-    white-space: nowrap;
+  .resume-project-head {
+    gap: 16px;
   }
 
-  .interest-intro {
-    align-items: center;
-    gap: 10px;
-    margin: 42px 0 28px;
+  .ability-card-head {
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
   }
+
+  .ability-tags {
+    justify-content: flex-start;
+  }
+
 
   .contact-page {
     padding: 55px 0 72px;
@@ -560,7 +841,13 @@ img {
   }
 }
 
-@media (min-width: 601px) and (max-width: 1299px) {
+/*
+  首页布局由可用画面的形状决定，而非设备宽度：
+  宽于 3:2 时，hello 在左、按钮组在右；
+  介于 17:20 和 3:2 时，hello 在上、按钮组在下；
+  更窄的竖屏则依次排列三张图。
+*/
+@media (min-aspect-ratio: 17/20) and (max-aspect-ratio: 3/2) {
   .home-page {
     display: flex;
     flex-direction: column;
@@ -570,6 +857,18 @@ img {
 
   .home-hero {
     padding: 36px 0 36px;
+  }
+
+  .home-hero img {
+    width: min(54vw, 104vh, 552px);
+  }
+
+  .entry-card:first-child img {
+    width: min(45.8vw, 73.3vh, 469px);
+  }
+
+  .entry-card+.entry-card img {
+    width: min(45.8vw, 73.3vh, 469px);
   }
 
   .home-entries {
@@ -597,10 +896,9 @@ img {
     margin-top: 16px;
   }
 
-  /* middle column */
 }
 
-@media (min-width: 1300px) {
+@media (min-aspect-ratio: 3/2) {
 
   /* wide column */
   .home-entries .entry-card+.entry-card {
@@ -610,7 +908,7 @@ img {
   }
 }
 
-@media (max-width: 600px) {
+@media (max-aspect-ratio: 17/20) {
   .home-page {
     display: flex;
     flex-direction: column;
@@ -621,45 +919,39 @@ img {
   .home-hero {
     padding: 36px;
   }
-}
 
-@media (max-width: 1100px) {
-  img {
-    zoom: .31;
-  }
-}
-
-@media (max-width: 900px) {
-  img {
-    zoom: .26;
-  }
-}
-
-@media (max-width: 760px) {
-  img {
-    zoom: .20;
-  }
-}
-
-/* @media (max-width: 600px) {
-  img {
-    zoom: .25;
+  .home-hero img {
+    width: min(88vw, 136vh, 552px);
   }
 
-  body {
-    font-size: 20px;
+  .entry-card:first-child img {
+    width: min(80vw, 117vh, 469px);
   }
-} */
 
-@media (max-width: 380px) {
-  img {
-    zoom: .20;
+  .entry-card+.entry-card img {
+    width: min(80vw, 97vh, 388px);
   }
-}
 
-@media (min-width: 1601px) {
-  img {
-    zoom: .42;
+  .home-entries {
+    left: auto;
+    transform: none;
+    flex-direction: column;
+    align-items: center;
+    width: max-content;
+    margin: 0 auto;
+    padding-bottom: 52px;
+  }
+
+  .entry-card:first-child {
+    z-index: 2;
+    left: -40px;
+  }
+
+  .entry-card+.entry-card {
+    z-index: 1;
+    margin-left: 50px;
+    margin-top: -195px;
+    left: 20px;
   }
 }
 

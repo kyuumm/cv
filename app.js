@@ -1,39 +1,5 @@
-const projects = [
-  {
-    title: "携程 EasyStay",
-    category: "产品与设计",
-    label: "团队项目",
-    summary: "围绕酒店预约、移动端体验与管理后台展开的团队项目。担任团队负责人，使用 Figma 参与产品设计，并参与移动端及后台功能规划。",
-    tools: "Figma · React · Vite · Ant Design Mobile · Express mock",
-    keywords: "携程 易住 酒店 预约 产品 设计 管理后台 React Vite Figma",
-  },
-  {
-    title: "AI 产品实习",
-    category: "AI 产品实践",
-    label: "产品实践",
-    summary: "参与产品测试、问题跟踪、需求整理、Figma 原型与文档工作。",
-    tools: "产品测试 · 需求整理 · Figma",
-    keywords: "AI 产品 实习 测试 问题跟踪 需求 Figma 原型 文档",
-  },
-  {
-    title: "React ToDoList",
-    category: "前端开发",
-    label: "前端练习",
-    summary: "使用 React 构建的待办事项应用。功能细节与项目链接待补充。",
-    tools: "React",
-    keywords: "React ToDoList 待办 前端",
-  },
-  {
-    title: "Unity 飞行器项目",
-    category: "其他项目",
-    label: "交互 / 游戏开发",
-    summary: "Unity 飞行器项目。玩法、个人负责部分与演示材料待补充。",
-    tools: "Unity",
-    keywords: "Unity 飞行器 游戏 交互",
-  },
-];
+import { resumeProjects, resumeTags } from "./resume.data.js";
 
-const categories = ["全部", "产品与设计", "AI 产品实践", "前端开发", "其他项目"];
 const routes = ["/", "/work", "/interests", "/contact"];
 const navigation = [
   ["/", "首页"],
@@ -53,9 +19,11 @@ const interestTopics = [
 const app = document.querySelector("#app");
 const asset = (path) => `/asset/${path}`;
 const alphaPixels = new WeakMap();
-let activeCategory = "全部";
 let searchTerm = "";
 let menuOpen = false;
+let activeProjectId = "";
+let workObserver;
+const activeTags = new Set();
 
 function currentRoute() {
   const path = location.pathname.replace(/\/$/, "") || "/";
@@ -63,12 +31,14 @@ function currentRoute() {
 }
 
 function escapeAttribute(value) {
-  return value
+  return String(value)
     .replaceAll("&", "&amp;")
     .replaceAll('"', "&quot;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
 }
+
+const escapeHtml = escapeAttribute;
 
 function getAlphaPixels(image) {
   if (alphaPixels.has(image)) return alphaPixels.get(image);
@@ -122,21 +92,21 @@ function header(route) {
   </header>`;
 }
 
-function footer() {
-  return `<footer class="site-footer">
-    <div class="shell">
-    <div class="footer-inner">
-      <div class="footer-about">计算机科学与技术本科生<br>对产品与设计感兴趣。</div>
-      <div class="footer-links">
-        <a href="/work" data-link>项目</a>
-        <a href="/interests" data-link>兴趣</a>
-        <a href="mailto:planktooon@outlook.com">邮件</a>
-      </div>
-    </div>
-    <div class="copyright"> ${new Date().getFullYear()} 十九</div>
-    </div>
-  </footer>`;
-}
+// function footer() {
+//   return `<footer class="site-footer">
+//     <div class="shell">
+//     <div class="footer-inner">
+//       <div class="footer-about">计算机科学与技术本科生<br>对产品与设计感兴趣。</div>
+//       <div class="footer-links">
+//         <a href="/work" data-link>项目</a>
+//         <a href="/interests" data-link>兴趣</a>
+//         <a href="mailto:planktooon@outlook.com">邮件</a>
+//       </div>
+//     </div>
+//     <div class="copyright"> ${new Date().getFullYear()} 十九</div>
+//     </div>
+//   </footer>`;
+// }
 
 function home() {
   return `<main class="page home-page">
@@ -154,41 +124,101 @@ function home() {
   </main>`;
 }
 
-function projectCard(project) {
-  return `<article class="project-card">
-    <span class="project-type">${project.label} · ${project.category}</span>
-    <h2>${project.title}</h2>
-    <p>${project.summary}</p>
-    <div class="project-meta">${project.tools}</div>
+function normalizeText(value) {
+  return String(value ?? "").toLocaleLowerCase();
+}
+
+function projectSearchText(project) {
+  return [project.title, project.role, project.period, project.summary, project.techStack?.join(" "), project.link].join(" ");
+}
+
+function blockSearchText(block) {
+  return [block.title, block.description, block.tags.join(" ")].join(" ");
+}
+
+function getVisibleResumeProjects() {
+  const query = normalizeText(searchTerm.trim());
+
+  return resumeProjects.flatMap((project) => {
+    const metadataMatches = !query || normalizeText(projectSearchText(project)).includes(query);
+
+    if (project.inProgress) {
+      return !activeTags.size && metadataMatches ? [{ ...project, visibleBlocks: [] }] : [];
+    }
+
+    const visibleBlocks = project.blocks.filter((block) => {
+      const matchesSearch = !query || metadataMatches || normalizeText(blockSearchText(block)).includes(query);
+      const matchesTags = !activeTags.size || block.tags.some((tag) => activeTags.has(tag));
+      return matchesSearch && matchesTags;
+    });
+
+    return visibleBlocks.length ? [{ ...project, visibleBlocks }] : [];
+  });
+}
+
+function renderAbilityTags(tags) {
+  return tags.map((tag) => `<button class="ability-tag ${activeTags.has(tag) ? "active" : ""}" type="button" data-tag="${escapeAttribute(tag)}" aria-pressed="${activeTags.has(tag)}">${escapeHtml(tag)}</button>`).join("");
+}
+
+function resumeBlock(block) {
+  return `<article class="ability-card">
+    <div class="ability-card-head">
+      <h3 class="ability-title"><span class="ability-bullet" aria-hidden="true">·</span> ${escapeHtml(block.title)}</h3>
+      <div class="ability-tags" aria-label="能力标签">${renderAbilityTags(block.tags)}</div>
+    </div>
+    <p class="ability-description">${escapeHtml(block.description)}</p>
+  </article>`;
+}
+
+function resumeProject(project) {
+  const meta = [project.role, project.period].filter(Boolean).map(escapeHtml).join(" · ");
+  if (project.inProgress) {
+    return `<article class="resume-project in-progress-card" id="project-${escapeAttribute(project.id)}" data-resume-project="${escapeAttribute(project.id)}">
+      <h2 data-project-heading="${escapeAttribute(project.id)}">${escapeHtml(project.title)}</h2>
+      <p class="project-role">${meta}</p>
+      <p class="project-summary">${escapeHtml(project.summary)}</p>
+    </article>`;
+  }
+
+  return `<article class="resume-project" id="project-${escapeAttribute(project.id)}" data-resume-project="${escapeAttribute(project.id)}">
+    <header class="resume-project-head">
+      <div>
+        <h2 data-project-heading="${escapeAttribute(project.id)}">${escapeHtml(project.title)}</h2>
+        <p class="project-role">${meta}</p>
+      </div>
+      ${project.link ? `<a class="project-link" href="${escapeAttribute(project.link)}" target="_blank" rel="noreferrer">GitHub ↗</a>` : ""}
+    </header>
+    <p class="project-summary">${escapeHtml(project.summary)}</p>
+    <div class="ability-list">${project.visibleBlocks.map(resumeBlock).join("")}</div>
+    ${project.techStack?.length ? `<p class="project-tech"><span>技术栈</span>${project.techStack.map(escapeHtml).join(" · ")}</p>` : ""}
   </article>`;
 }
 
 function work() {
-  const visibleProjects = projects.filter((project) => {
-    const matchesCategory = activeCategory === "全部" || project.category === activeCategory;
-    const content = `${project.title} ${project.category} ${project.label} ${project.summary} ${project.tools} ${project.keywords}`;
-    return matchesCategory && content.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  const visibleProjects = getVisibleResumeProjects();
+  const visibleBlockCount = visibleProjects.reduce((count, project) => count + project.visibleBlocks.length, 0);
+  if (!visibleProjects.some((project) => project.id === activeProjectId)) activeProjectId = visibleProjects[0]?.id ?? "";
 
-  return `<main class="page shell">
-    <div class="section-heading">
-      <div>
-        <span class="eyebrow">Selected work & practice</span>
-        <h1 class="image-heading"><span class="sr-only">求职 / 项目</span><img src="${asset("job/JobCn.png")}" alt=""></h1>
-      </div>
-      <p>计算机学习背景与项目实践。具体分工和成果以已确认的信息为准。</p>
-    </div>
+  return `<main class="page shell work-page">
+    <h1 class="sr-only">求职经历</h1>
     <div class="work-layout">
-      <aside class="filters" aria-label="项目筛选">
-        <label class="search-label" for="project-search">搜索项目、技能或关键词</label>
-        <div class="search-box"><span aria-hidden="true">⌕</span><input id="project-search" type="search" placeholder="React、Figma、AI" value="${escapeAttribute(searchTerm)}" autocomplete="off"></div>
-        <p class="filter-heading">项目分类</p>
-        <div class="filter-list">${categories.map((category) => `<button class="filter-button ${activeCategory === category ? "active" : ""}" data-category="${category}" aria-pressed="${activeCategory === category}">${category}</button>`).join("")}</div>
-        <button class="clear-button" data-clear>清除筛选</button>
+      <aside class="work-sidebar" aria-label="经历筛选与目录">
+        <div class="work-sidebar-art" aria-label="求职">
+          <img class="work-art-job" src="${asset("job/JobCn.png")}" alt="求职">
+        </div>
+        <section class="filters" aria-label="经历筛选">
+         
+          <p class="filter-heading">标签筛选</p>
+          <div class="tag-filter-list">${resumeTags.map((tag) => `<button class="tag-filter ${activeTags.has(tag) ? "active" : ""}" type="button" data-tag="${escapeAttribute(tag)}" aria-pressed="${activeTags.has(tag)}">${escapeHtml(tag)}</button>`).join("")}</div>
+          <div class="filter-status"><span class="result-count" aria-live="polite">共 ${visibleBlockCount} 个经历块</span><button class="clear-button" type="button" data-clear ${!searchTerm && !activeTags.size ? "disabled" : ""}>清除筛选</button></div>
+        </section>
+        ${visibleProjects.length ? `<nav class="experience-menu" aria-label="经历目录">
+
+          <div class="experience-menu-list">${visibleProjects.map((project) => `<button class="experience-menu-item ${project.id === activeProjectId ? "active" : ""}" type="button" data-project-target="${escapeAttribute(project.id)}">${escapeHtml(project.navTitle)}</button>`).join("")}</div>
+        </nav>` : ""}
       </aside>
-      <section aria-label="项目列表">
-        <p class="result-count" aria-live="polite">${visibleProjects.length} 个项目</p>
-        <div class="project-list">${visibleProjects.length ? visibleProjects.map(projectCard).join("") : `<div class="empty-state">没有找到匹配内容<button data-clear>显示全部项目</button></div>`}</div>
+      <section class="work-content" aria-label="项目经历">
+        ${visibleProjects.length ? `<div class="resume-project-list">${visibleProjects.map(resumeProject).join("")}</div>` : `<div class="empty-state"><p>没有找到匹配的经历块。</p><button type="button" data-clear>清除筛选</button></div>`}
       </section>
     </div>
   </main>`;
@@ -197,9 +227,7 @@ function work() {
 function interests() {
   return `<main class="page shell interests-page">
     <div class="interest-intro">
-      <img src="${asset("interest/Star1.png")}" alt="">
       <h1 class="interest-title"><span class="sr-only">兴趣</span><img src="${asset("interest/interestCn.png")}" alt=""></h1>
-      <img src="${asset("interest/Star2.png")}" alt="">
     </div>
     <section class="interest-grid" aria-label="兴趣主题">
       ${interestTopics.map(([image, label]) => `<div class="interest-tile"><img src="${asset(`interest/${image}`)}" alt="${label}"></div>`).join("")}
@@ -219,11 +247,14 @@ function contact() {
 }
 
 function render() {
+  workObserver?.disconnect();
+  workObserver = undefined;
   const route = currentRoute();
   const page = route === "/work" ? work() : route === "/interests" ? interests() : route === "/contact" ? contact() : home();
   const scrim = menuOpen ? `<button class="menu-scrim" type="button" aria-label="关闭导航菜单"></button>` : "";
-  app.innerHTML = `${header(route)}${scrim}${page}${footer()}`;
+  app.innerHTML = `${header(route)}${scrim}${page}`;
   bind();
+  if (route === "/work") setupWorkObserver();
 }
 
 function navigate(path) {
@@ -231,6 +262,59 @@ function navigate(path) {
   menuOpen = false;
   render();
   window.scrollTo(0, 0);
+}
+
+function setActiveProject(projectId) {
+  const changed = activeProjectId !== projectId;
+  activeProjectId = projectId;
+  const title = resumeProjects.find((project) => project.id === projectId)?.navTitle ?? "";
+  app.querySelector("[data-current-project]")?.replaceChildren(title);
+  app.querySelectorAll("[data-project-target]").forEach((item) => {
+    item.classList.toggle("active", item.dataset.projectTarget === projectId);
+  });
+
+  if (changed) {
+    const item = app.querySelector(`[data-project-target="${projectId}"]`);
+    const menu = item?.closest(".experience-menu-list");
+    if (item && menu) {
+      const itemRect = item.getBoundingClientRect();
+      const menuRect = menu.getBoundingClientRect();
+      const isOutsideMenu = itemRect.top < menuRect.top || itemRect.bottom > menuRect.bottom;
+      if (isOutsideMenu) {
+        menu.scrollTo({
+          top: menu.scrollTop + itemRect.top - menuRect.top - (menu.clientHeight - itemRect.height) / 2,
+          behavior: "smooth",
+        });
+      }
+    }
+  }
+}
+
+function setupWorkObserver() {
+  const headings = [...app.querySelectorAll("[data-project-heading]")];
+  if (!headings.length) return;
+  if (!("IntersectionObserver" in window)) {
+    headings.forEach((heading) => heading.classList.add("is-visible"));
+    return;
+  }
+  const visibleHeadings = new Set();
+
+  workObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("is-visible");
+        visibleHeadings.add(entry.target);
+      } else visibleHeadings.delete(entry.target);
+    });
+    const firstVisibleHeading = headings.find((heading) => visibleHeadings.has(heading));
+    if (firstVisibleHeading) setActiveProject(firstVisibleHeading.dataset.projectHeading);
+  }, {
+    root: null,
+    rootMargin: "-84px 0px 0px 0px",
+    threshold: 0,
+  });
+
+  headings.forEach((heading) => workObserver.observe(heading));
 }
 
 function bind() {
@@ -271,10 +355,11 @@ function bind() {
     render();
     app.querySelector(".menu-toggle")?.focus();
   });
-  app.querySelectorAll("[data-category]").forEach((button) => button.addEventListener("click", () => {
-    activeCategory = button.dataset.category;
+  app.querySelectorAll("[data-tag]").forEach((button) => button.addEventListener("click", () => {
+    const { tag } = button.dataset;
+    if (activeTags.has(tag)) activeTags.delete(tag);
+    else activeTags.add(tag);
     render();
-    app.querySelector("#project-search")?.focus();
   }));
   app.querySelector("#project-search")?.addEventListener("input", (event) => {
     const position = event.target.selectionStart;
@@ -285,9 +370,15 @@ function bind() {
     input.setSelectionRange(position, position);
   });
   app.querySelectorAll("[data-clear]").forEach((button) => button.addEventListener("click", () => {
-    activeCategory = "全部";
+    activeTags.clear();
     searchTerm = "";
     render();
+  }));
+  app.querySelectorAll("[data-project-target]").forEach((button) => button.addEventListener("click", () => {
+    const target = document.querySelector(`#project-${button.dataset.projectTarget}`);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    setActiveProject(button.dataset.projectTarget);
   }));
 }
 
