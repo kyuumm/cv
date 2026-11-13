@@ -5,4 +5,5 @@ export default defineConfig({
     host: '0.0.0.0',
     allowedHosts: ['parish-clarify-snowboard.ngrok-free.dev'],
   },
+  base: '/cv/',
 })

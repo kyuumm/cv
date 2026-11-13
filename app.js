@@ -17,16 +17,21 @@ const interestTopics = [
   ["otherCn.png", "其他兴趣"],
 ];
 const app = document.querySelector("#app");
-const asset = (path) => `/asset/${path}`;
 const alphaPixels = new WeakMap();
 let searchTerm = "";
 let menuOpen = false;
 let activeProjectId = "";
 let workObserver;
 const activeTags = new Set();
+const basePath = import.meta.env.BASE_URL;
+const baseRoute = basePath.replace(/\/$/, "");
+const asset = (path) => `${basePath}asset/${path}`;
+const routeUrl = (route) => route === "/" ? basePath : `${basePath}${route.slice(1)}`;
 
 function currentRoute() {
-  const path = location.pathname.replace(/\/$/, "") || "/";
+  const path = (location.pathname.startsWith(baseRoute)
+    ? location.pathname.slice(baseRoute.length)
+    : location.pathname).replace(/\/$/, "") || "/";
   return routes.includes(path) ? path : "/";
 }
 
@@ -83,10 +88,10 @@ function getArtworkHit(container, clientX, clientY) {
 function header(route) {
   return `<header class="site-header">
     <div class="shell header-inner">
-      <a class="brand" href="/" data-link aria-label="十九，返回首页">十九</a>
+      <a class="brand" href="${routeUrl("/")}" data-link aria-label="十九，返回首页">十九</a>
       <button class="menu-toggle" type="button" aria-label="${menuOpen ? "关闭菜单" : "打开菜单"}" aria-expanded="${menuOpen}">☰</button>
       <nav class="nav ${menuOpen ? "open" : ""}" aria-label="主导航">
-        ${navigation.map(([path, label]) => `<a href="${path}" data-link aria-current="${route === path ? "page" : "false"}">${label}</a>`).join("")}
+        ${navigation.map(([path, label]) => `<a href="${routeUrl(path)}" data-link aria-current="${route === path ? "page" : "false"}">${label}</a>`).join("")}
       </nav>
     </div>
   </header>`;
@@ -114,10 +119,10 @@ function home() {
       <img src="${asset("home/home_welcome.png")}" alt="手写问候语">
     </section>
     <section class="home-entries" aria-label="页面入口">
-      <a class="entry-card" href="/work" data-link aria-label="求职 / 项目">
+      <a class="entry-card" href="${routeUrl("/work")}" data-link aria-label="求职 / 项目">
         <img src="${asset("home/home_jobBtn.png")}" alt="">
       </a>
-      <a class="entry-card" href="/interests" data-link aria-label="兴趣">
+      <a class="entry-card" href="${routeUrl("/interests")}" data-link aria-label="兴趣">
         <img src="${asset("home/home_interestBtn.png")}" alt="">
       </a>
     </section>
